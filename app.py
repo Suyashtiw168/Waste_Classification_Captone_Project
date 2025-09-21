@@ -1,25 +1,39 @@
+import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
-import streamlit as st
 
-# Load TFLite model
-interpreter = tf.lite.Interpreter(model_path="waste_model.tflite")
-interpreter.allocate_tensors()
+# Load model
+@st.cache_resource
+def load_model():
+    return tf.keras.models.load_model("waste_model.h5")
 
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
+model = load_model()
 
-# Prediction function
-def predict_image(img):
-    img = img.resize((128,128))
+class_names = ["cardboard", "glass", "metal", "paper", "plastic", "trash"]
+
+st.title("♻️ Waste Classification App")
+
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption="Uploaded Image", use_container_width=True)
+
+    # Preprocess
+    img = image.resize((128, 128))
     img_array = np.array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0).astype(np.float32)
+    img_array = np.expand_dims(img_array, axis=0)
 
-    interpreter.set_tensor(input_details[0]['index'], img_array)
-    interpreter.invoke()
-    preds = interpreter.get_tensor(output_details[0]['index'])[0]
-    return preds
+    # Predict
+    preds = model.predict(img_array)
+    confidence = np.max(preds)
+    label = class_names[np.argmax(preds)]
+
+    if confidence < 0.5:
+        st.warning(f"⚠️ Model not confident (Confidence: {confidence:.2f}). Try another image.")
+    else:
+        st.success(f"✅ Predicted: {label} (Confidence: {confidence:.2f})")
 
 
 
