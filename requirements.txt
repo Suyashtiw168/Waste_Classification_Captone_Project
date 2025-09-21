@@ -2,6 +2,4 @@ streamlit
 tensorflow-cpu==2.9.3
 numpy==1.21.6
 Pillow
-gdown
-
 
