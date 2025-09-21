@@ -6,10 +6,10 @@ import gdown
 import os
 
 # ================================
-# Download model from Google Drive (if not exists)
+# Download model (if not exists)
 # ================================
 MODEL_PATH = "waste_model.keras"
-FILE_ID = "1pT_ktqFOrcgAG8uoDVYMdHZ3bkZj_xB5"   # 👈 apna drive file id
+FILE_ID = "1pT_ktqFOrcgAG8uoDVYMdHZ3bkZj_xB5"   # 👈 apna Drive ka file id
 
 if not os.path.exists(MODEL_PATH):
     gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", MODEL_PATH, quiet=False)
@@ -36,14 +36,16 @@ if uploaded_file is not None:
     img_array = np.expand_dims(img_array, axis=0)
 
     # Predict
-    preds = model.predict(img_array)
-    confidence = np.max(preds)
-    pred_class = class_names[np.argmax(preds)]
+    preds = model.predict(img_array)[0]
 
-    # ✅ Confidence threshold check
-    if confidence < 0.5:
-        st.warning(f"⚠️ Model not confident (Confidence: {confidence:.2f}). Try another image.")
-    else:
-        st.success(f"✅ Predicted: {pred_class} (Confidence: {confidence:.2f})")
+    # ✅ Top-2 predictions
+    top2_idx = preds.argsort()[-2:][::-1]
+    top2_classes = [(class_names[i], preds[i]) for i in top2_idx]
+
+    # Show results
+    st.subheader("Predictions:")
+    for cls, conf in top2_classes:
+        st.write(f"✅ {cls} (Confidence: {conf:.2f})")
+
 
 
